@@ -38,7 +38,9 @@
 html,body{height:100%}
 body{background:var(--paper);color:var(--ink);font-family:var(--sans);font-size:15px;line-height:1.45}
 *{box-sizing:border-box}
-.app{display:grid;grid-template-columns:340px 1fr;height:100%;min-height:0}
+.app{display:grid;grid-template-columns:340px minmax(0,1fr);grid-template-rows:minmax(0,1fr);height:100%;min-height:0;overflow:hidden}
+.app.collapsed{grid-template-columns:minmax(0,1fr)}
+.app.collapsed aside{display:none}
 aside{background:var(--panel);border-right:1px solid var(--line);overflow-y:auto;padding:18px 18px 28px;display:flex;flex-direction:column;gap:22px}
 h1{font-size:20px;margin:0;letter-spacing:-.01em}
 .sub{margin:2px 0 0;color:var(--muted);font-size:13px}
@@ -94,18 +96,24 @@ td.del{width:30px;text-align:right}
 .zoomrow{display:grid;grid-template-columns:62px 1fr 92px;gap:8px;align-items:center;font-size:13px;color:var(--muted)}
 .zoomrow output{font-family:var(--mono);font-size:12px;text-align:right;color:var(--ink)}
 input[type=range]{width:100%;accent-color:var(--ink)}
-.stage{position:relative;min-width:0;min-height:0;background:var(--canvas)}
-canvas{display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
+.stage{position:relative;min-width:0;min-height:0;overflow:hidden;background:var(--canvas)}
+canvas{position:absolute;inset:0;display:block;width:100%;height:100%;touch-action:none;cursor:crosshair}
 canvas.grab{cursor:grab} canvas.grabbing{cursor:grabbing}
 .hud{position:absolute;right:12px;top:12px;display:flex;gap:6px;flex-direction:column}
+.side-toggle{position:absolute;left:12px;top:12px;width:38px;height:38px;padding:0;font-size:16px;background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .hud button{width:38px;height:38px;padding:0;font-size:18px;background:var(--panel);box-shadow:0 1px 3px rgba(0,0,0,.08)}
 .hud button.txt{font-size:11px;font-weight:700;letter-spacing:.04em}
 .coord{position:absolute;left:12px;bottom:12px;font-family:var(--mono);font-size:12.5px;background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:4px 8px;color:var(--muted);font-variant-numeric:tabular-nums;pointer-events:none}
 .coord b{color:var(--ink);font-weight:600}
-@media (max-width:760px){
-  .app{grid-template-columns:1fr;grid-template-rows:62vh auto;height:auto}
+@media (max-width:1000px){
+  .app{grid-template-columns:280px minmax(0,1fr)}
+  aside{padding-inline:14px}
+}
+@media (max-width:560px){
+  .app{grid-template-columns:minmax(0,1fr);grid-template-rows:62vh auto;height:auto;overflow:visible}
   .stage{order:-1;height:62vh}
   aside{border-right:0;border-top:1px solid var(--line);overflow:visible;padding-inline:16px}
+  .side-toggle{display:none}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -174,6 +182,7 @@ canvas.grab{cursor:grab} canvas.grabbing{cursor:grabbing}
 
   <div class="stage" id="stage">
     <canvas id="cv" aria-label="Koordinatensystem"></canvas>
+    <button type="button" class="side-toggle" id="sideToggle" aria-label="Seitenleiste ausblenden" aria-expanded="true">◀</button>
     <div class="hud">
       <button type="button" id="zin" aria-label="Vergrößern">+</button>
       <button type="button" id="zout" aria-label="Verkleinern">−</button>
@@ -552,6 +561,13 @@ cv.addEventListener('pointerup', e => {
   drag = null; cv.className = '';
 });
 cv.addEventListener('pointerleave', () => { if (!drag && hoverIdx !== -1){ hoverIdx = -1; draw(); } $('coord').innerHTML = 'x <b>–</b> · y <b>–</b>'; });
+
+// ---------- sidebar toggle ----------
+$('sideToggle').addEventListener('click', () => {
+  const app = document.querySelector('.app'), c = app.classList.toggle('collapsed'), b = $('sideToggle');
+  b.textContent = c ? '▶' : '◀'; b.setAttribute('aria-expanded', String(!c));
+  b.setAttribute('aria-label', c ? 'Seitenleiste einblenden' : 'Seitenleiste ausblenden');
+});
 
 // ---------- theme + resize ----------
 new ResizeObserver(resize).observe(stage);
